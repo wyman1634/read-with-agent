@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{{TITLE}} · 读书页</title>
+  <style>
+    :root { --paper:#fcfaf5; --card:#fffdf8; --ink:#292c2b; --muted:#6c706b; --line:#e5dfd3; --accent:#99663b; --wash:#f0e9dc; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; scroll-padding-top:2rem; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:17px/1.85 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; }
+    a { color:var(--accent); text-underline-offset:.22em; overflow-wrap:anywhere; }
+    a:hover { color:#624028; }
+    :focus-visible { outline:3px solid #b77d44; outline-offset:4px; }
+    [hidden] { display:none!important; }
+    .skip { position:fixed; top:-100px; left:1rem; z-index:5; padding:.5rem 1rem; background:var(--card); }
+    .skip:focus { top:.5rem; }
+    .layout { max-width:1280px; margin:auto; display:grid; grid-template-columns:260px minmax(0,1fr); min-height:100vh; }
+    .sidebar { position:sticky; top:0; height:100vh; overflow-y:auto; padding:3rem 1.8rem 2rem; border-right:1px solid var(--line); }
+    .brand { font-size:12px; text-transform:uppercase; letter-spacing:.18em; color:var(--accent); font-weight:650; margin:0 0 1.5rem; }
+    .sidebar h2 { font-size:16px; margin:0 0 1rem; }
+    .toc a { display:block; font-size:14px; text-decoration:none; padding:.3rem 0; color:var(--muted); }
+    .toc a:hover { color:var(--accent); }
+    .toc .chapter-link { font-size:12px; padding:.2rem 0 .2rem .8rem; border-left:1px solid var(--line); }
+    .sidebar-note { font-size:12px; color:var(--muted); margin-top:2rem; }
+    main { padding:3.5rem clamp(1.5rem,5vw,5rem) 5rem; min-width:0; }
+    .eyebrow { color:var(--accent); font-size:13px; margin:0 0 .65rem; letter-spacing:.08em; }
+    h1 { font-size:clamp(28px,4vw,43px); line-height:1.35; font-weight:650; letter-spacing:-.02em; margin:0; overflow-wrap:anywhere; }
+    .intro { color:var(--muted); font-size:15px; margin:.9rem 0 1.8rem; }
+    .tools { display:flex; align-items:end; gap:.8rem; flex-wrap:wrap; padding-bottom:2rem; border-bottom:1px solid var(--line); }
+    .search { flex:1; min-width:180px; }
+    .search label { display:block; font-size:12px; color:var(--muted); margin-bottom:.3rem; }
+    input { width:100%; border:1px solid var(--line); border-radius:7px; background:var(--card); color:var(--ink); font:inherit; font-size:14px; padding:.6rem .9rem; }
+    button { border:1px solid var(--line); border-radius:7px; background:var(--card); color:var(--ink); padding:.67rem .9rem; font:inherit; font-size:13px; cursor:pointer; }
+    button:hover { background:var(--wash); }
+    #search-status { color:var(--muted); font-size:12px; min-height:1.85em; margin:.5rem 0 0; }
+    .book-section { margin-top:3rem; }
+    .section-heading { font-size:23px; font-weight:600; margin:0 0 1.3rem; line-height:1.4; }
+    .section-number { color:var(--accent); font-size:12px; font-weight:500; margin-right:.65rem; vertical-align:middle; }
+    .prose { overflow-wrap:anywhere; }
+    .prose h2 { font-size:21px; margin:1.8rem 0 .8rem; }
+    .prose h3 { font-size:18px; margin:1.6rem 0 .6rem; }
+    .prose h4,.prose h5,.prose h6 { font-size:16px; margin:1.3rem 0 .5rem; }
+    .prose p { margin:.7rem 0 1rem; }
+    .prose ul,.prose ol { padding-left:1.6rem; }
+    .prose li { padding-left:.2rem; margin:.35rem 0; }
+    blockquote { border-left:3px solid #c9aa85; margin:1.3rem 0; padding:.15rem 1.2rem; background:var(--wash); color:#55584f; }
+    code { font: .85em/1.7 ui-monospace,SFMono-Regular,Consolas,monospace; background:var(--wash); padding:.15em .35em; border-radius:3px; }
+    pre { overflow-x:auto; background:#f1eee6; border:1px solid var(--line); padding:1rem 1.2rem; border-radius:7px; line-height:1.6; }
+    pre code { padding:0; background:none; border-radius:0; font-size:13px; white-space:pre; }
+    .code-label { font-size:11px; color:var(--muted); margin:1rem 0 -.4rem; }
+    .table-scroll { overflow-x:auto; margin:1.2rem 0; }
+    table { border-collapse:collapse; width:100%; font-size:14px; }
+    th,td { padding:.6rem .85rem; border-bottom:1px solid var(--line); vertical-align:top; }
+    th { background:var(--wash); font-weight:600; }
+    .align-left { text-align:left; } .align-center { text-align:center; } .align-right { text-align:right; }
+    .chapter { background:var(--card); border:1px solid var(--line); border-radius:9px; margin:.9rem 0; }
+    summary { cursor:pointer; padding:1rem 1.2rem; font-size:17px; font-weight:550; }
+    summary::marker { color:var(--accent); }
+    .chapter[open] summary { border-bottom:1px solid var(--line); }
+    .chapter-body { padding:.4rem 1.4rem 1.1rem; }
+    .empty { color:var(--muted); font-size:15px; border:1px dashed var(--line); border-radius:7px; padding:1rem; }
+    .hint { font-size:13px; color:var(--muted); }
+    footer { margin-top:3rem; border-top:1px solid var(--line); padding-top:1rem; color:var(--muted); font-size:12px; }
+    @media(max-width:800px) { .layout { display:block; } .sidebar { position:relative; height:auto; padding:1.2rem 1.5rem; border-right:0; border-bottom:1px solid var(--line); } .brand { margin-bottom:.6rem; } .sidebar h2,.sidebar-note,.chapter-link { display:none!important; } .toc { display:flex; gap:1.2rem; flex-wrap:wrap; } main { padding:2rem 1.5rem 3rem; } .book-section { margin-top:2.3rem; } }
+    @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+    @media print { body { background:white; color:black; font-size:11pt; } .layout { display:block; } .sidebar,.tools,#search-status,.skip,.hint { display:none; } main { padding:0; } .search-unit[hidden] { display:block!important; } details::details-content { display:block!important; content-visibility:visible!important; } details > .chapter-body { display:block!important; } .chapter { break-inside:auto; background:none; } summary,h2,h3 { break-after:avoid; } .book-section { margin-top:1.5rem; } pre { white-space:pre-wrap; } pre code { white-space:pre-wrap; overflow-wrap:anywhere; } .table-scroll { overflow:visible; } a { color:inherit; } }
+  </style>
+</head>
+<body>
+  <a href="#reading" class="skip">跳到阅读内容</a>
+  <div class="layout">
+    <aside class="sidebar" aria-label="阅读目录">
+      <p class="brand">READ WITH AGENT</p>
+      <h2>阅读目录</h2>
+      <nav class="toc">
+        <a href="#overview">全书地图与材料范围</a>
+        <a href="#depth">分层蒸馏</a>
+        {{CHAPTER_NAV}}
+        <a href="#route">阅读路线</a>
+        <a href="#progress">当前进度</a>
+      </nav>
+      <p class="sidebar-note">先掌握全貌，再进入值得细读的内容。</p>
+    </aside>
+    <main id="reading">
+      <header>
+        <p class="eyebrow">你的阅读指南</p>
+        <h1>{{TITLE}}</h1>
+        <p class="intro">从全书地图开始。展开感兴趣的内容，沿阅读路线回到关键原文。</p>
+        <div class="tools" id="reader-tools" hidden>
+          <div class="search"><label for="search">搜索本页内容</label><input id="search" type="search" placeholder="概念、章节或问题…" autocomplete="off"></div>
+          <button id="expand" type="button">展开全部</button>
+          <button id="collapse" type="button">收起全部</button>
+        </div>
+        <p id="search-status" role="status" aria-live="polite"></p>
+      </header>
+      <section class="book-section" id="overview" aria-labelledby="overview-heading">
+        <h2 class="section-heading" id="overview-heading"><span class="section-number">01</span>全书地图与材料范围</h2>
+        <div class="prose search-unit">{{MAP}}</div>
+      </section>
+      <section class="book-section" id="depth" aria-labelledby="depth-heading">
+        <h2 class="section-heading" id="depth-heading"><span class="section-number">02</span>分层蒸馏</h2>
+        <p class="hint">每个主题独立展开，按需要深入。</p>
+        <div class="prose">{{DEPTH}}</div>
+      </section>
+      <section class="book-section" id="route" aria-labelledby="route-heading">
+        <h2 class="section-heading" id="route-heading"><span class="section-number">03</span>阅读路线</h2>
+        <div class="prose search-unit">{{ROUTE}}</div>
+      </section>
+      <section class="book-section" id="progress" aria-labelledby="progress-heading">
+        <h2 class="section-heading" id="progress-heading"><span class="section-number">04</span>当前进度</h2>
+        <div class="prose search-unit">{{PROGRESS}}</div>
+      </section>
+      <footer>可以随时回到原文核对，也可以从当前问题继续讨论。</footer>
+    </main>
+  </div>
+  <script>
+    (() => {
+      const input = document.getElementById('search');
+      const units = [...document.querySelectorAll('.search-unit')];
+      const chapters = [...document.querySelectorAll('details.chapter')];
+      const status = document.getElementById('search-status');
+      document.getElementById('reader-tools').hidden = false;
+      let previousOpen = null;
+      input.addEventListener('input', () => {
+        const term = input.value.trim().toLocaleLowerCase();
+        if (term && previousOpen === null) previousOpen = chapters.map(chapter => chapter.open);
+        let count = 0;
+        units.forEach(unit => {
+          const matches = !term || unit.textContent.toLocaleLowerCase().includes(term);
+          unit.hidden = !matches;
+          if (matches) count++;
+          if (term && matches && unit.tagName === 'DETAILS') unit.open = true;
+        });
+        if (!term && previousOpen !== null) {
+          chapters.forEach((chapter, index) => { chapter.open = previousOpen[index]; });
+          previousOpen = null;
+        }
+        status.textContent = term ? (count ? `找到 ${count} 处相关内容。` : '没有找到相关内容，试试其他词。') : '';
+      });
+      document.getElementById('expand').addEventListener('click', () => chapters.forEach(chapter => { if (!chapter.hidden) chapter.open = true; }));
+      document.getElementById('collapse').addEventListener('click', () => chapters.forEach(chapter => { chapter.open = false; }));
+      document.querySelector('.toc').addEventListener('click', event => {
+        if (event.target.closest('a') && input.value) {
+          input.value = '';
+          input.dispatchEvent(new Event('input'));
+        }
+      });
+      function revealHash() {
+        let id;
+        try { id = decodeURIComponent(location.hash.slice(1)); } catch (_) { return; }
+        const target = document.getElementById(id);
+        if (!target) return;
+        const chapter = target.closest('details');
+        if (chapter) chapter.open = true;
+      }
+      window.addEventListener('hashchange', revealHash);
+      revealHash();
+      let printState;
+      window.addEventListener('beforeprint', () => {
+        printState = chapters.map(chapter => chapter.open);
+        chapters.forEach(chapter => { chapter.open = true; });
+      });
+      window.addEventListener('afterprint', () => {
+        if (printState) chapters.forEach((chapter, index) => { chapter.open = printState[index]; });
+        printState = null;
+      });
+    })();
+  </script>
+</body>
+</html>
