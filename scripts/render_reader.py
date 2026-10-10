@@ -6,6 +6,7 @@ The caller must omit spoilers until the reader has explicitly allowed them.
 """
 
 import argparse
+import base64
 import html
 import re
 import sys
@@ -272,6 +273,62 @@ def chapters(source):
     return result
 
 
+class SourcePreviews:
+    """Embed explicitly linked local sources so previews also work offline."""
+
+    TEXT = {".txt", ".md", ".json"}
+    IMAGES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
+
+    def __init__(self, workspace, anchors):
+        self.workspace = workspace.resolve()
+        self.anchors = anchors
+        self.templates = {}
+
+    def replace(self, fragment):
+        def preview(match):
+            url, label = html.unescape(match.group(1)), match.group(2)
+            parsed = urlsplit(url)
+            path = Path(unquote(parsed.path))
+            if parsed.scheme or not parsed.path or path.suffix.lower() not in self.TEXT | self.IMAGES.keys():
+                return match.group(0)
+            path = (self.workspace / path).resolve()
+            if not path.is_relative_to(self.workspace) or not path.is_file():
+                return '<span class="source-unavailable">' + label + '（原文不可用）</span>'
+            if path not in self.templates:
+                if path.stat().st_size > 2_000_000:
+                    return '<span class="source-unavailable">' + label + '（请准备较短选段）</span>'
+                suffix = path.suffix.lower()
+                if suffix in self.IMAGES:
+                    data = base64.b64encode(path.read_bytes()).decode("ascii")
+                    content = f'<img alt="原文图片" src="data:{self.IMAGES[suffix]};base64,{data}">'
+                else:
+                    text = path.read_text(encoding="utf-8-sig")
+                    if suffix == ".json":
+                        content = '<pre><code>' + html.escape(text) + '</code></pre>'
+                    else:
+                        blocks = []
+                        for block in re.split(r"\n\s*\n", text.strip()):
+                            location = re.match(r"^(\[[^\n]+\])\n", block)
+                            caption = ""
+                            if location:
+                                caption = '<small class="source-location">' + html.escape(location.group(1)) + '</small>'
+                                block = block[location.end():]
+                            blocks.append('<div class="source-block">' + caption + '<p>' + html.escape(block) + '</p></div>')
+                        content = "\n".join(blocks)
+                identifier = self.anchors.make("source", "template-")
+                self.templates[path] = (identifier, content)
+            identifier = self.templates[path][0]
+            panel = self.anchors.make("source", "panel-")
+            return (f'<button type="button" class="source-toggle" data-template="{identifier}" '
+                    f'data-panel="{panel}" aria-expanded="false">{label}</button>')
+
+        return re.sub(r'<a href="([^"]+)">(.*?)</a>', preview, fragment, flags=re.DOTALL)
+
+    def render_templates(self):
+        return "\n".join(f'<template id="{identifier}"><div class="source-content">{content}</div></template>'
+                         for identifier, content in self.templates.values())
+
+
 def render_workspace(workspace, output=None):
     workspace = Path(workspace)
     sources = {}
@@ -313,6 +370,10 @@ def render_workspace(workspace, output=None):
         "ROUTE": body("route.md", "route-"),
         "PROGRESS": body("progress.md", "progress-"),
     }
+    previews = SourcePreviews(workspace, anchors)
+    for key in ("MAP", "DEPTH", "ROUTE", "PROGRESS"):
+        values[key] = previews.replace(values[key])
+    values["SOURCE_TEMPLATES"] = previews.render_templates()
     template = Path(__file__).resolve().parent.parent / "assets" / "reader-template.html"
     page = re.sub(r"\{\{([A-Z_]+)\}\}", lambda m: values[m.group(1)], template.read_text(encoding="utf-8"))
     output = Path(output) if output else workspace / "reader.html"

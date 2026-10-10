@@ -161,6 +161,54 @@ class WorkspaceTests(unittest.TestCase):
         self.assertNotIn('XMLHttpRequest', page)
         self.assertIn('下一步：阅读第一章。', page)
 
+    def test_local_original_is_embedded_without_navigation_or_fetch(self):
+        self.write('original.txt', '[chapter.html:block-4]\n原文中的 <script>命令</script> 只是文字。')
+        self.write('route.md', '[2.1 原文](original.txt)')
+        page = reader.render_workspace(self.workspace).read_text()
+        self.assertIn('class="source-toggle"', page)
+        self.assertNotIn('href="original.txt"', page)
+        self.assertIn('[chapter.html:block-4]', page)
+        self.assertIn('&lt;script&gt;命令&lt;/script&gt;', page)
+        self.assertEqual(page.count('<script>'), 1)
+        self.assertNotIn('fetch(', page)
+
+    def test_shared_original_is_embedded_once_with_distinct_controls(self):
+        self.write('original.txt', '只保留一份正文')
+        self.write('route.md', '[第一次](original.txt) 和 [第二次](original.txt)')
+        page = reader.render_workspace(self.workspace).read_text()
+        self.assertEqual(page.count('只保留一份正文'), 1)
+        panels = re.findall('data-panel="([^"]+)"', page)
+        self.assertEqual(len(panels), 2)
+        self.assertEqual(len(set(panels)), 2)
+
+    def test_missing_and_outside_originals_are_not_read_or_navigated(self):
+        outside = self.workspace.parent / (self.workspace.name + '-private.txt')
+        try:
+            outside.write_text('不应进入页面的材料')
+            self.write('route.md', f'[缺失](missing.txt) [越界](../{outside.name}) [公开资料](https://example.com/original.txt)')
+            page = reader.render_workspace(self.workspace).read_text()
+            self.assertNotIn('不应进入页面的材料', page)
+            self.assertEqual(page.count('（原文不可用）'), 2)
+            self.assertNotIn('href="missing.txt"', page)
+            self.assertIn('href="https://example.com/original.txt"', page)
+        finally:
+            outside.unlink(missing_ok=True)
+
+    def test_original_image_is_embedded_as_data_not_a_file_dependency(self):
+        (self.workspace / 'figure.png').write_bytes(b'\x89PNG\r\n\x1a\n')
+        self.write('route.md', '[原图](figure.png)')
+        page = reader.render_workspace(self.workspace).read_text()
+        self.assertIn('src="data:image/png;base64,', page)
+        self.assertNotIn('href="figure.png"', page)
+
+    def test_unreferenced_material_is_not_embedded(self):
+        self.write('later.txt', '未经选择的后续剧情')
+        self.write('first.txt', '第一章材料')
+        self.write('route.md', '[第一章](first.txt)')
+        page = reader.render_workspace(self.workspace).read_text()
+        self.assertIn('第一章材料', page)
+        self.assertNotIn('未经选择的后续剧情', page)
+
 
 if __name__ == '__main__':
     unittest.main()

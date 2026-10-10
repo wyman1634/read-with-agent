@@ -60,6 +60,16 @@
     summary::marker { color:var(--accent); }
     .chapter[open] summary { border-bottom:1px solid var(--line); }
     .chapter-body { padding:.4rem 1.4rem 1.1rem; }
+    .source-toggle { display:inline; border:0; border-bottom:1px dotted var(--accent); border-radius:0; padding:0 .12rem; background:none; color:var(--accent); font:inherit; cursor:pointer; }
+    .source-toggle::after { content:' ▾'; font-size:.75em; }
+    .source-toggle[aria-expanded="true"]::after { content:' ▴'; }
+    .source-preview { margin:1rem 0; border:1px solid var(--line); border-radius:7px; background:var(--card); }
+    .source-preview summary { font-size:15px; padding:.7rem 1rem; }
+    .source-content { padding:.2rem 1.2rem 1rem; }
+    .source-content p { white-space:pre-wrap; }
+    .source-location { color:var(--muted); font:11px/1.6 ui-monospace,monospace; overflow-wrap:anywhere; }
+    .source-content img { display:block; max-width:100%; height:auto; margin:1rem auto; }
+    .source-unavailable { color:var(--muted); }
     .empty { color:var(--muted); font-size:15px; border:1px dashed var(--line); border-radius:7px; padding:1rem; }
     .hint { font-size:13px; color:var(--muted); }
     footer { margin-top:3rem; border-top:1px solid var(--line); padding-top:1rem; color:var(--muted); font-size:12px; }
@@ -115,6 +125,7 @@
       <footer>可以随时回到原文核对，也可以从当前问题继续讨论。</footer>
     </main>
   </div>
+  {{SOURCE_TEMPLATES}}
   <script>
     (() => {
       const input = document.getElementById('search');
@@ -122,6 +133,26 @@
       const chapters = [...document.querySelectorAll('details.chapter')];
       const status = document.getElementById('search-status');
       document.getElementById('reader-tools').hidden = false;
+      document.querySelector('main').addEventListener('click', event => {
+        const button = event.target.closest('.source-toggle');
+        if (!button) return;
+        let panel = document.getElementById(button.dataset.panel);
+        if (!panel) {
+          panel = document.createElement('details');
+          panel.className = 'source-preview';
+          panel.id = button.dataset.panel;
+          const summary = document.createElement('summary');
+          summary.textContent = '原文：' + button.textContent;
+          panel.append(summary, document.getElementById(button.dataset.template).content.cloneNode(true));
+          const block = button.closest('p, li, .table-scroll, blockquote') || button;
+          if (block.tagName === 'LI') block.append(panel);
+          else block.after(panel);
+          button.setAttribute('aria-controls', panel.id);
+          panel.addEventListener('toggle', () => button.setAttribute('aria-expanded', String(panel.open)));
+        }
+        panel.open = !panel.open;
+        button.setAttribute('aria-expanded', String(panel.open));
+      });
       let previousOpen = null;
       input.addEventListener('input', () => {
         const term = input.value.trim().toLocaleLowerCase();
@@ -140,7 +171,7 @@
         status.textContent = term ? (count ? `找到 ${count} 处相关内容。` : '没有找到相关内容，试试其他词。') : '';
       });
       document.getElementById('expand').addEventListener('click', () => chapters.forEach(chapter => { if (!chapter.hidden) chapter.open = true; }));
-      document.getElementById('collapse').addEventListener('click', () => chapters.forEach(chapter => { chapter.open = false; }));
+      document.getElementById('collapse').addEventListener('click', () => document.querySelectorAll('details').forEach(chapter => { chapter.open = false; }));
       document.querySelector('.toc').addEventListener('click', event => {
         if (event.target.closest('a') && input.value) {
           input.value = '';
