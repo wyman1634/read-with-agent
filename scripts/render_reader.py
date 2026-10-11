@@ -339,7 +339,8 @@ def render_workspace(workspace, output=None):
     if not sources:
         raise ValueError("未找到阅读材料：请先准备 map.md、distillation.md、route.md 或 progress.md。")
     anchors = Anchors()
-    anchors.used.update(("overview", "depth", "route", "progress"))
+    anchors.used.update(("overview", "depth", "route", "progress", "session-guide", "session-heading",
+                         "prompt-start", "prompt-continue", "prompt-resume", "copy-status"))
     title = "我的读书页"
     for line in sources.get("map.md", "").splitlines():
         heading = HEADING.match(line)
@@ -369,6 +370,13 @@ def render_workspace(workspace, output=None):
         "CHAPTER_NAV": "\n".join(nav),
         "ROUTE": body("route.md", "route-"),
         "PROGRESS": body("progress.md", "progress-"),
+        "START_PROMPT": html.escape(f"$read-with-agent 请开始带读这个工作区：{workspace.resolve()}\n"
+                                  "从记录的当前单元开始，一次一小段：先解释重点并展示关键原文，再等我讨论或实践。"),
+        "CONTINUE_PROMPT": html.escape(f"$read-with-agent 继续带读这个工作区：{workspace.resolve()}\n"
+                                     "读取已有进度，接上当前讨论或下一步。"),
+        "RESUME_PROMPT": html.escape(f"$read-with-agent 继续带读这个工作区：{workspace.resolve()}\n"
+                                   "先读取 map.md、route.md、progress.md，再按需读取当前部分的蒸馏和原文。"
+                                   "采用最新记录，保留未答问题与真实理解状态，一次继续一小段。"),
     }
     previews = SourcePreviews(workspace, anchors)
     for key in ("MAP", "DEPTH", "ROUTE", "PROGRESS"):

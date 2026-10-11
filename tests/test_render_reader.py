@@ -18,10 +18,13 @@ class Inspector(HTMLParser):
         self.ids = []
         self.hrefs = []
         self.tags = []
+        self.details_classes = []
 
     def handle_starttag(self, tag, attrs):
         self.tags.append(tag)
         attrs = dict(attrs)
+        if tag == 'details':
+            self.details_classes.append(attrs.get('class', '').split())
         if "id" in attrs:
             self.ids.append(attrs["id"])
         if "href" in attrs:
@@ -121,7 +124,9 @@ class WorkspaceTests(unittest.TestCase):
         self.assertEqual(output, self.workspace / 'reader.html')
         self.assertEqual(page.count('尚未准备。后续阅读时补充。'), 3)
         self.assertIn('仅第一章。其余未提供。', page)
-        self.assertNotIn(str(self.workspace), page)
+        inspector = Inspector()
+        inspector.feed(page)
+        self.assertFalse(any(href.startswith(str(self.workspace)) for href in inspector.hrefs))
         self.assertIn('<html lang="zh-CN">', page)
 
     def test_navigation_is_unique_and_stable(self):
@@ -139,7 +144,7 @@ class WorkspaceTests(unittest.TestCase):
         for href in inspector.hrefs:
             if href.startswith('#'):
                 self.assertIn(href[1:], inspector.ids)
-        self.assertEqual(inspector.tags.count('details'), 2)
+        self.assertEqual(sum('chapter' in classes for classes in inspector.details_classes), 2)
         self.assertIn('href="#chapter-第一章-2"', first)
         self.assertIn('beforeprint', first)
         self.assertIn('afterprint', first)
@@ -208,6 +213,45 @@ class WorkspaceTests(unittest.TestCase):
         page = reader.render_workspace(self.workspace).read_text()
         self.assertIn('第一章材料', page)
         self.assertNotIn('未经选择的后续剧情', page)
+
+    def test_resume_prompt_preserves_actual_path_with_html_characters(self):
+        workspace = self.workspace / '阅读 <one> & two'
+        workspace.mkdir()
+        (workspace / 'map.md').write_text('# 我的书')
+        page = reader.render_workspace(workspace).read_text()
+
+        class Prompts(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.active = None
+                self.values = {}
+
+            def handle_starttag(self, tag, attrs):
+                identifier = dict(attrs).get('id', '')
+                if tag == 'code' and identifier.startswith('prompt-'):
+                    self.active = identifier
+                    self.values[identifier] = ''
+
+            def handle_data(self, value):
+                if self.active:
+                    self.values[self.active] += value
+
+            def handle_endtag(self, tag):
+                if tag == 'code':
+                    self.active = None
+
+        prompts = Prompts()
+        prompts.feed(page)
+        self.assertEqual(set(prompts.values), {'prompt-start', 'prompt-continue', 'prompt-resume'})
+        for value in prompts.values.values():
+            self.assertTrue(value.startswith('$read-with-agent '))
+            self.assertIn(str(workspace.resolve()), value)
+
+    def test_generating_handoff_does_not_change_learning_record(self):
+        self.write('progress.md', '2.1 已介绍；没有回答；下一步继续解释。')
+        before = (self.workspace / 'progress.md').read_bytes()
+        reader.render_workspace(self.workspace)
+        self.assertEqual((self.workspace / 'progress.md').read_bytes(), before)
 
 
 if __name__ == '__main__':

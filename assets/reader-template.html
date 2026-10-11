@@ -70,6 +70,17 @@
     .source-location { color:var(--muted); font:11px/1.6 ui-monospace,monospace; overflow-wrap:anywhere; }
     .source-content img { display:block; max-width:100%; height:auto; margin:1rem auto; }
     .source-unavailable { color:var(--muted); }
+    .session-guide { margin:1.8rem 0 2rem; padding:1.2rem; border:1px solid var(--line); border-radius:9px; background:var(--card); }
+    .session-guide h2 { font-size:19px; margin:0 0 .6rem; }
+    .session-cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1.2rem; }
+    .session-card { min-width:0; }
+    .session-card h3 { font-size:15px; margin:.6rem 0; }
+    .session-card p { font-size:13px; color:var(--muted); margin:.5rem 0 1rem; }
+    .session-card summary { font-size:12px; padding:.5rem 0; }
+    .session-card pre { padding:.7rem; }
+    .session-card pre code { white-space:pre-wrap; overflow-wrap:anywhere; font-size:11px; }
+    #copy-status { font-size:12px; color:var(--accent); margin:.7rem 0 0; }
+    @media(max-width:1000px) { .session-cards { grid-template-columns:1fr; gap:.4rem; } }
     .empty { color:var(--muted); font-size:15px; border:1px dashed var(--line); border-radius:7px; padding:1rem; }
     .hint { font-size:13px; color:var(--muted); }
     footer { margin-top:3rem; border-top:1px solid var(--line); padding-top:1rem; color:var(--muted); font-size:12px; }
@@ -105,6 +116,30 @@
         </div>
         <p id="search-status" role="status" aria-live="polite"></p>
       </header>
+      <section class="session-guide" id="session-guide" aria-labelledby="session-heading">
+        <h2 id="session-heading">怎么带读，怎么接着读</h2>
+        <div class="session-cards">
+          <div class="session-card">
+            <h3>开始带读</h3>
+            <p>Agent 先讲当前一小段，展开关键原文，再围绕你的疑问、解释或应用例子交流。</p>
+            <button type="button" class="copy-prompt" data-prompt="prompt-start" hidden>复制带读指令</button>
+            <details><summary>查看带读指令</summary><pre><code id="prompt-start">{{START_PROMPT}}</code></pre></details>
+          </div>
+          <div class="session-card">
+            <h3>同一对话继续</h3>
+            <p>说“继续”就接着讲；卡住说“换个例子”，想往前说“下一节”。讨论后会保存位置和未解决的问题。</p>
+            <button type="button" class="copy-prompt" data-prompt="prompt-continue" hidden>复制继续指令</button>
+            <details><summary>查看继续指令</summary><pre><code id="prompt-continue">{{CONTINUE_PROMPT}}</code></pre></details>
+          </div>
+          <div class="session-card">
+            <h3>新对话接着读</h3>
+            <p>复制指令，粘贴到能访问本书文件的新对话。Agent 会先读保存的进度，接上当前单元。</p>
+            <button type="button" class="copy-prompt" data-prompt="prompt-resume" hidden>复制新对话指令</button>
+            <details><summary>查看新对话指令</summary><pre><code id="prompt-resume">{{RESUME_PROMPT}}</code></pre></details>
+          </div>
+        </div>
+        <p id="copy-status" role="status" aria-live="polite">复制后粘贴到聊天窗口，即可开始。</p>
+      </section>
       <section class="book-section" id="overview" aria-labelledby="overview-heading">
         <h2 class="section-heading" id="overview-heading"><span class="section-number">01</span>全书地图与材料范围</h2>
         <div class="prose search-unit">{{MAP}}</div>
@@ -133,6 +168,19 @@
       const chapters = [...document.querySelectorAll('details.chapter')];
       const status = document.getElementById('search-status');
       document.getElementById('reader-tools').hidden = false;
+      document.querySelectorAll('.copy-prompt').forEach(button => { button.hidden = false; });
+      document.querySelector('.session-guide').addEventListener('click', async event => {
+        const button = event.target.closest('.copy-prompt');
+        if (!button) return;
+        const status = document.getElementById('copy-status');
+        try {
+          await navigator.clipboard.writeText(document.getElementById(button.dataset.prompt).textContent);
+          status.textContent = '已复制。粘贴到聊天窗口即可接上阅读。';
+        } catch (_) {
+          button.closest('.session-card').querySelector('details').open = true;
+          status.textContent = '请选中已展开的指令，手动复制到聊天窗口。';
+        }
+      });
       document.querySelector('main').addEventListener('click', event => {
         const button = event.target.closest('.source-toggle');
         if (!button) return;
