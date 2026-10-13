@@ -190,7 +190,7 @@
           panel.className = 'source-preview';
           panel.id = button.dataset.panel;
           const summary = document.createElement('summary');
-          summary.textContent = '原文：' + button.textContent;
+          summary.textContent = button.textContent;
           panel.append(summary, document.getElementById(button.dataset.template).content.cloneNode(true));
           const block = button.closest('p, li, .table-scroll, blockquote') || button;
           if (block.tagName === 'LI') block.append(panel);

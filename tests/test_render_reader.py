@@ -206,6 +206,13 @@ class WorkspaceTests(unittest.TestCase):
         self.assertIn('src="data:image/png;base64,', page)
         self.assertNotIn('href="figure.png"', page)
 
+    def test_diagram_image_keeps_its_label_and_escapes_attribute_characters(self):
+        (self.workspace / 'figure.png').write_bytes(b'\x89PNG\r\n\x1a\n')
+        self.write('distillation.md', '[Agent 示意图：**共享** "对象" <边界>](figure.png)')
+        page = reader.render_workspace(self.workspace).read_text()
+        self.assertIn('alt="Agent 示意图：共享 &quot;对象&quot; &lt;边界&gt;"', page)
+        self.assertNotIn('alt="原文图片"', page)
+
     def test_unreferenced_material_is_not_embedded(self):
         self.write('later.txt', '未经选择的后续剧情')
         self.write('first.txt', '第一章材料')
@@ -252,6 +259,20 @@ class WorkspaceTests(unittest.TestCase):
         before = (self.workspace / 'progress.md').read_bytes()
         reader.render_workspace(self.workspace)
         self.assertEqual((self.workspace / 'progress.md').read_bytes(), before)
+
+    def test_preferences_and_selected_history_are_available_offline(self):
+        self.write('progress.md', '# 当前进度\n下一步：探针。\n[回查历史](history/unit-6.md)')
+        self.write('preferences.md', '# 偏好\n昂贵演示先选择。<script>alert(1)</script>')
+        (self.workspace / 'history').mkdir()
+        self.write('history/unit-6.md', '实际反馈：懂了；仅为自述理解。')
+        self.write('history/unit-1.md', '未选择的早期记录')
+        before = {p: p.read_bytes() for p in self.workspace.rglob('*.md')}
+        page = reader.render_workspace(self.workspace).read_text()
+        self.assertIn('<summary>当前阅读偏好</summary>', page)
+        self.assertIn('昂贵演示先选择。&lt;script&gt;', page)
+        self.assertIn('实际反馈：懂了；仅为自述理解。', page)
+        self.assertNotIn('未选择的早期记录', page)
+        self.assertEqual(before, {p: p.read_bytes() for p in self.workspace.rglob('*.md')})
 
 
 if __name__ == '__main__':

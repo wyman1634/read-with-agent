@@ -4,3 +4,4 @@ __pycache__/
 reading/
 *-workspace/
 feedback.json
+examples/**/reader.html
