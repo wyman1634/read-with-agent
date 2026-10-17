@@ -135,6 +135,58 @@
         "方案仅包含三个对象、必要箭头和一个状态开关；业务请求不穿过状态对象",
         "只输出方案及必要资料，不读全部历史或实际渲染"
       ]
+    },
+    {
+      "id": 13,
+      "name": "namespace-before-dns-application",
+      "prompt": "继续讲跨命名空间访问Service，可以给我一个小例子。只聊天，不操作集群。",
+      "scope": "隔离技术续读记录：读者已解释Pod、Service和Label；Namespace仅在上一轮被称作逻辑分组，未解释它的资源类型及与Pod/Label的关系。当前来源改述：Namespace是独立资源，Pod和Service通过metadata.namespace确定所在空间，labels为属性；常规Linux Pod DNS搜索本空间，跨空间可写服务名.namespace。",
+      "expected_output": "先补Namespace对象与归属字段，再示范同/跨空间查找；可选判断不得依赖尚未解释的关系。",
+      "expectations": [
+        "在解释跨空间因果或要求判断/配置前，说明Namespace是什么资源、与Pod和Service的关系；不是把逻辑分组换一个同义词。",
+        "明确metadata.namespace与labels区别，test/prod是空间名；不把Namespace画成运行容器的Pod。",
+        "提供完整位置情境及一次Agent示范，之后才可给可选练习，或本轮只讲解。",
+        "不因为记录里提过namespace或用户继续就判前置已懂，不操作集群。"
+      ]
+    },
+    {
+      "id": 14,
+      "name": "pause-purpose-and-simpler-alternative",
+      "prompt": "继续读Deployment的pause/resume，解释为什么需要它，不用实操。",
+      "scope": "隔离记录：读者已解释Deployment模板变化触发滚动替换；未讨论本地编辑与提交次数。来源改述：暂停期间可以多次修改模板而不启动对应rollout，恢复后按最终模板推进；一次完整模板更新无需为合并修改而pause。",
+      "expected_output": "讲清分步提交的情境和一次提交的更简单替代，不能把pause教成普通发布必需步骤。",
+      "expectations": [
+        "交代修改是本地编辑还是多次独立提交到集群，说明控制器何时可能观察中间态。",
+        "主动解释一次提交最终镜像与变量不需要为合并而pause。",
+        "把初始状态、动作、结果连成示范，不以未讲明的提交行为要求读者预测。",
+        "不承诺连续两条命令必有两次rollout，不执行发布操作。"
+      ]
+    },
+    {
+      "id": 15,
+      "name": "repair-undefined-concept-before-exercise",
+      "prompt": "你刚让我给test里的Pod改配置访问prod的服务，但namespace是什么？也是一个带标签的Pod吗？",
+      "scope": "隔离模拟对话：未讲Namespace资源模型，读者未提交配置或练习结果。来源改述：Namespace是独立资源，Pod和Service通过metadata.namespace确定所在空间，labels为属性；常规Linux Pod按本命名空间搜索短服务名，跨空间可写服务名.namespace。测试输出只写隔离工作区，不读写真实阅读记录。",
+      "expected_output": "停止原操作要求，补对象关系并接回例子；将问题记为讲解前置缺失。",
+      "expectations": [
+        "先解释Namespace独立资源及metadata.namespace/labels关系，不继续催改配置或将读者提问当错误答案。",
+        "至少有一个字段或结构示范让读者能区分所属空间和标签，不只给译名。",
+        "保留未答任务和真实状态，不编namespace或DNS应用已掌握。",
+        "不新增配额、网络策略、RBAC等整套教程，不操作真实集群。"
+      ]
+    },
+    {
+      "id": 16,
+      "name": "reuse-explained-prerequisites-without-exam",
+      "prompt": "继续讲DNS解析成功但HTTP失败，只讲一个小例子，不要现在考我。",
+      "scope": "隔离续读记录：已用对象和字段讲清Namespace/Pod/Label；已解释DNS返回普通Service ClusterIP、节点规则转发到就绪Pod。读者说理解但没有实操证据。来源改述：解析成功不验证Service端口、目标端口、后端就绪状态或应用响应，选一层展开即可。",
+      "expected_output": "复用已讲前置，给一层完整排查示范；不重讲全部术语、不强制确认/考试、不伪造掌握。",
+      "expectations": [
+        "直接用已解释的Namespace与DNS关系接下一小段，无整套基础问卷或逐术语重复确认。",
+        "提供具体初始状态、现象与所选一层的验证依据，示范先于任何可选操作。",
+        "尊重不考试，只讲一个小例子，不扩大成整个排错清单。",
+        "将自述理解与实际应用证据分开，测试输出不写真实工作区。"
+      ]
     }
   ]
 }
