@@ -135,6 +135,97 @@
         "方案仅包含三个对象、必要箭头和一个状态开关；业务请求不穿过状态对象",
         "只输出方案及必要资料，不读全部历史或实际渲染"
       ]
+    },
+    {
+      "id": 13,
+      "name": "namespace-before-dns-application",
+      "prompt": "继续讲跨命名空间访问Service，可以给我一个小例子。只聊天，不操作集群。",
+      "scope": "隔离技术续读记录：读者已解释Pod、Service和Label；Namespace仅在上一轮被称作逻辑分组，未解释它的资源类型及与Pod/Label的关系。当前来源改述：Namespace是独立资源，Pod和Service通过metadata.namespace确定所在空间，labels为属性；常规Linux Pod DNS搜索本空间，跨空间可写服务名.namespace。",
+      "expected_output": "先补Namespace对象与归属字段，再示范同/跨空间查找；可选判断不得依赖尚未解释的关系。",
+      "expectations": [
+        "在解释跨空间因果或要求判断/配置前，说明Namespace是什么资源、与Pod和Service的关系；不是把逻辑分组换一个同义词。",
+        "明确metadata.namespace与labels区别，test/prod是空间名；不把Namespace画成运行容器的Pod。",
+        "提供完整位置情境及一次Agent示范，之后才可给可选练习，或本轮只讲解。",
+        "不因为记录里提过namespace或用户继续就判前置已懂，不操作集群。"
+      ]
+    },
+    {
+      "id": 14,
+      "name": "pause-purpose-and-simpler-alternative",
+      "prompt": "继续读Deployment的pause/resume，解释为什么需要它，不用实操。",
+      "scope": "隔离记录：读者已解释Deployment模板变化触发滚动替换；未讨论本地编辑与提交次数。来源改述：暂停期间可以多次修改模板而不启动对应rollout，恢复后按最终模板推进；一次完整模板更新无需为合并修改而pause。",
+      "expected_output": "讲清分步提交的情境和一次提交的更简单替代，不能把pause教成普通发布必需步骤。",
+      "expectations": [
+        "交代修改是本地编辑还是多次独立提交到集群，说明控制器何时可能观察中间态。",
+        "主动解释一次提交最终镜像与变量不需要为合并而pause。",
+        "把初始状态、动作、结果连成示范，不以未讲明的提交行为要求读者预测。",
+        "不承诺连续两条命令必有两次rollout，不执行发布操作。"
+      ]
+    },
+    {
+      "id": 15,
+      "name": "repair-undefined-concept-before-exercise",
+      "prompt": "你刚让我给test里的Pod改配置访问prod的服务，但namespace是什么？也是一个带标签的Pod吗？",
+      "scope": "隔离模拟对话：未讲Namespace资源模型，读者未提交配置或练习结果。来源改述：Namespace是独立资源，Pod和Service通过metadata.namespace确定所在空间，labels为属性；常规Linux Pod按本命名空间搜索短服务名，跨空间可写服务名.namespace。测试输出只写隔离工作区，不读写真实阅读记录。",
+      "expected_output": "停止原操作要求，补对象关系并接回例子；将问题记为讲解前置缺失。",
+      "expectations": [
+        "先解释Namespace独立资源及metadata.namespace/labels关系，不继续催改配置或将读者提问当错误答案。",
+        "至少有一个字段或结构示范让读者能区分所属空间和标签，不只给译名。",
+        "保留未答任务和真实状态，不编namespace或DNS应用已掌握。",
+        "不新增配额、网络策略、RBAC等整套教程，不操作真实集群。"
+      ]
+    },
+    {
+      "id": 16,
+      "name": "reuse-explained-prerequisites-without-exam",
+      "prompt": "继续讲DNS解析成功但HTTP失败，只讲一个小例子，不要现在考我。",
+      "scope": "隔离续读记录：已用对象和字段讲清Namespace/Pod/Label；已解释DNS返回普通Service ClusterIP、节点规则转发到就绪Pod。读者说理解但没有实操证据。来源改述：解析成功不验证Service端口、目标端口、后端就绪状态或应用响应，选一层展开即可。",
+      "expected_output": "复用已讲前置，给一层完整排查示范；不重讲全部术语、不强制确认/考试、不伪造掌握。",
+      "expectations": [
+        "直接用已解释的Namespace与DNS关系接下一小段，无整套基础问卷或逐术语重复确认。",
+        "提供具体初始状态、现象与所选一层的验证依据，示范先于任何可选操作。",
+        "尊重不考试，只讲一个小例子，不扩大成整个排错清单。",
+        "将自述理解与实际应用证据分开，测试输出不写真实工作区。"
+      ]
+    },
+    {
+      "id": 17,
+      "name": "technical-domain-map-before-reading-route",
+      "prompt": "第一次用这份Kubernetes节选带读。我知道容器，但对Kubernetes的东西怎么分没有概念。先带我入门，不要上来让我写配置。",
+      "scope": "隔离模拟工作区，无学习证据。来源节选改述只覆盖：Namespace为命名与管理范围；Pod描述容器；Deployment/ReplicaSet期望与副本管理；Service定义入口与选择条件；EndpointSlice保存后端；控制器和kubelet是执行程序。章节目录仅列对象、发布、服务发现，未提供其他章节正文。",
+      "expected_output": "先用来源支持的最小领域关系图建立框架，再按依赖给一个入口与解释单元，不把章节表当对象关系图。",
+      "expectations": [
+        "map中区分章节结构与领域关系，当前核心概念有用途及带含义的连接，避免只列目录或一串资源名字。",
+        "当前路线先有框架/对象关系再进机制或应用，给出前置与补读入口。",
+        "图上待读/未核对内容与实际已解释、用户掌握区分，不扩成未给来源的全资源清单。",
+        "先示范且无配置作业或集群操作，记录真实无掌握证据。"
+      ]
+    },
+    {
+      "id": 18,
+      "name": "repair-missing-domain-map-in-existing-route",
+      "prompt": "在继续之前，我学这么久还是不知道Kubernetes这些资源怎么分类、互相是什么关系。既然是路线缺口，先补这个框架。",
+      "scope": "隔离旧工作区：map只有书籍身份、范围和章节表；当前入口EndpointSlice，原下一步对比无匹配与未就绪；已介绍Pod、Service、Label，Namespace只刚补定义。历史证据：读者在5副本预算例子算对取整和下界，加法经反馈自纠，不扩大到其他机制。来源改述沿用eval17列出的对象/程序角色；本案例上下文自足，不要求读取eval17产物。",
+      "expected_output": "暂停原片段，补当前所需领域关系图及路线前置，保留被暂缓的下一步与真实历史。",
+      "expectations": [
+        "把反复缺全貌识别为关系框架/路线问题，不只再次定义EndpointSlice，也不归为读者记忆差。",
+        "补图时区分类型、对象、字段、执行程序及相应角色关系；明确本轮范围而非穷举所有种类。",
+        "map/route/progress同步当前补框架入口和依赖，保留原EndpointSlice记录对比为后续，不重建全工作区或丢历史。",
+        "预算实际证据、自述理解与其他未验证状态保持，不因补图宣称框架已掌握；不要求实际配置操作。"
+      ]
+    },
+    {
+      "id": 19,
+      "name": "place-new-concept-in-non-kubernetes-domain-map",
+      "prompt": "继续读这份Java虚拟机节选，开始讲栈帧，只讲解示范，不考我。",
+      "scope": "隔离技术续读：已有领域图说明线程各有自己的虚拟机栈，方法调用在该栈中推进；栈帧未介绍。来源节选改述：每次方法调用对应一个栈帧，帧中有局部变量表、操作数栈等信息，方法执行完成弹出该帧。无Kubernetes或API资源背景，当前章节有可回查来源。",
+      "expected_output": "把栈帧定位到已有线程/虚拟机栈关系，解释当前必要角色并示范调用过程，渐进回填地图。",
+      "expectations": [
+        "用简短定位把栈帧接到已知线程/虚拟机栈关系，并说明帧是什么与承担什么信息；不重讲整本书或整张图。",
+        "按该领域合适的执行结构区分层次，不套用Kubernetes资源类型/namespace字段等模型。",
+        "原路线当前入口/前置与map相关部分保持一致，未展开的内部结构只在当前推理需要时解释。",
+        "尊重不考试，先示范；地图扩展不记作用户已掌握，不遍历所有历史。"
+      ]
     }
   ]
 }
