@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>{{TITLE}} · 带读地图</title>
+<style>
+:root{color-scheme:dark;--bg:#10151b;--card:#19232e;--panel:#151e27;--line:#354555;--text:#e8eef4;--muted:#a7bac9;--accent:#80d4b0;--link:#80c8f4;--blue:#1e3548;--gold:#f2cd82}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:1.5rem}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}a{color:var(--link);text-decoration:none}a:hover{text-decoration:underline}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #a3e3ff;outline-offset:3px}[hidden]{display:none!important}.page{width:min(1100px,calc(100% - 48px));margin:auto;padding:58px 0 88px}.topline{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}.eyebrow{margin:0 0 12px;color:var(--accent);font-size:12px;font-weight:700;letter-spacing:.13em}.title{font-size:clamp(30px,4vw,46px);line-height:1.25;letter-spacing:-.035em;margin:0}.intro{color:var(--muted);max-width:740px;margin:14px 0 0;font-size:15px}.help{position:relative;flex:none}.help>summary{list-style:none;padding:8px 14px;border:1px solid var(--line);border-radius:9px;color:#c5d5e0;font-size:13px;cursor:pointer}.help>summary::-webkit-details-marker{display:none}.help>summary:hover{background:#22303c;color:white}.help-panel{position:absolute;top:calc(100% + 12px);right:0;z-index:5;width:min(760px,calc(100vw - 48px));padding:22px;border:1px solid var(--line);border-radius:13px;background:var(--card);box-shadow:0 16px 35px #0004}.help-panel>p{color:var(--muted);font-size:14px;margin:0 0 18px}.help-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}.help-grid section{min-width:0}.help-grid h3{margin:0 0 6px;font-size:15px}.help-grid p{margin:0 0 12px;color:var(--muted);font-size:13px}.mini-button,.tool-toggle,.collapse-all{border:1px solid var(--line);background:transparent;color:#dceaf3;border-radius:8px;padding:7px 11px;font-size:13px}.mini-button:hover,.tool-toggle:hover,.collapse-all:hover{background:#253747}.help-grid details{margin-top:7px}.help-grid details summary{color:var(--accent);font-size:12px;cursor:pointer}.help-grid pre{min-width:0;max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;font-size:11px}.copy-status{color:var(--accent)!important;font-size:12px!important;margin:12px 0 0!important}.cards{display:grid;grid-template-columns:1.15fr 1fr;gap:16px;margin:38px 0 60px}.card{display:block;min-width:0;border:1px solid var(--line);border-radius:14px;background:linear-gradient(135deg,#1c2c3b,#18232d);padding:22px 24px;box-shadow:0 12px 28px #0002;color:var(--text)}a.card:hover{text-decoration:none;border-color:#6a91a5}.card-label{color:var(--muted);font-size:13px;font-weight:600}.card-main{font-size:18px;font-weight:650;margin:9px 0 4px}.card-sub{font-size:13px;color:var(--muted)}.card-link{display:inline-block;color:var(--accent);font-size:13px;margin-top:12px}.progress-values{display:flex;gap:clamp(18px,3vw,42px);margin-top:12px}.progress-values strong{display:block;font-size:23px;line-height:1.2}.progress-values span{color:var(--muted);font-size:12px}.progress-note{font-size:12px;color:var(--muted);margin-top:12px}.map-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:18px}.map-head h2{font-size:22px;margin:0;line-height:1.3}.map-head p{font-size:13px;color:var(--muted);margin:5px 0 0}.map-actions{display:flex;gap:7px;flex-wrap:wrap}.tool{position:relative}.tool>summary{list-style:none;cursor:pointer}.tool>summary::-webkit-details-marker{display:none}.tool-panel{position:absolute;right:0;top:calc(100% + 8px);z-index:2;padding:12px;background:#1a2834;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 25px #0005;min-width:220px}.tool-panel label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}input,select{width:100%;padding:8px 10px;background:#101820;color:var(--text);border:1px solid #526478;border-radius:7px}.search-status{min-height:1.5em;margin:0 0 8px;color:var(--muted);font-size:12px}.map-chapter{background:var(--card);border:1px solid var(--line);border-radius:11px;margin:10px 0;overflow:hidden}.map-chapter>summary,.map-module>summary,.map-point>summary,.history>summary,.lecture>summary{cursor:pointer}.map-chapter>summary{list-style:none;display:flex;align-items:center;gap:15px;padding:17px 20px}.map-chapter>summary::-webkit-details-marker{display:none}.map-chapter>summary::before{content:'›';color:var(--accent);font-size:22px;line-height:1;transition:transform .15s}.map-chapter[open]>summary::before{transform:rotate(90deg)}.chapter-index{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}.chapter-title{flex:1;font-weight:650}.chapter-count{color:var(--muted);font-size:12px}.chapter-items{border-top:1px solid var(--line);padding:9px 18px 14px}.map-module{margin:5px 0 5px 8px;border-left:1px solid #4a6376}.map-module>summary{padding:9px 12px;color:#d6e6f0;font-size:14px}.map-module>summary::marker,.map-point>summary::marker,.history>summary::marker,.lecture>summary::marker{color:var(--accent)}.module-items{padding:2px 0 6px 16px}.map-point{margin:7px 0;background:#111a23;border:1px solid #2b3e4f;border-radius:8px}.map-point>summary{padding:11px 13px;color:#e0ebf2;font-size:14px}.point-title{font-weight:550}.status{float:right;margin-left:12px;border-radius:99px;padding:1px 9px;font-size:11px;font-weight:500}.done{background:#1e453b;color:#a8efd1}.partial{background:#394536;color:#c5e8a8}.pending,.summary-status{background:#303944;color:#d4dfeb}.point-content{padding:0 14px 14px}.point-intro,.point-items,.source-reference,.related{font-size:13px;color:var(--muted)}.point-items{padding-left:20px}.source-reference{font-size:11px;margin:14px 0 0}.history{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}.history>summary{font-size:13px;color:var(--link)}.history-items{padding:8px 0 0}.lecture{margin:6px 0;border:1px solid #304454;border-radius:7px;background:#17232c}.lecture>summary{padding:10px 12px;font-size:13px}.lecture-body{border-top:1px solid #304454;padding:14px;color:#d6e3ec;overflow-wrap:anywhere}.lecture-body:empty{display:none}.lecture-content p{margin:.65rem 0 1rem}.lecture-content h3{font-size:17px;margin:1.4rem 0 .5rem}.lecture-content ul,.lecture-content ol{padding-left:1.5rem}.lecture-content table{border-collapse:collapse;width:100%;font-size:13px}.lecture-content th,.lecture-content td{border-bottom:1px solid var(--line);padding:.5rem;text-align:left}.table-scroll{overflow-x:auto}.lecture-content pre,.help-grid pre{overflow-x:auto;background:#101820;border:1px solid var(--line);border-radius:7px;padding:12px}.lecture-content code{font-size:.88em;color:#c8e8f8;background:#263747;border-radius:3px;padding:.1em .25em}.lecture-content pre code{background:none;padding:0}.source-toggle{border:0;border-bottom:1px dotted var(--link);padding:0;background:none;color:var(--link);font:inherit;cursor:pointer}.source-preview{margin:12px 0;border:1px solid var(--line);border-radius:7px;padding:10px}.source-preview>summary{font-size:13px;cursor:pointer}.source-content img{display:block;max-width:100%;height:auto}.source-content p{white-space:pre-wrap}.source-location{font-size:11px;color:var(--muted)}.source-unavailable{color:var(--muted)}footer{color:var(--muted);font-size:12px;margin-top:48px}
+.deferred{background:#51452d;color:#f2dcaa}
+@media(max-width:680px){.page{width:calc(100% - 28px);padding:30px 0 60px}.topline{gap:10px}.help>summary{padding:7px 9px}.help-panel{width:min(760px,calc(100vw - 28px))}.cards{grid-template-columns:1fr;margin:28px 0 42px}.card{padding:19px}.help-grid{grid-template-columns:1fr;gap:16px}.map-head{align-items:flex-start;flex-direction:column}.map-actions{width:100%}.chapter-count{display:none}.chapter-items{padding-left:10px;padding-right:10px}.module-items{padding-left:8px}.status{float:none;display:inline-block}.map-point>summary{line-height:2}.tool-panel{left:0;right:auto}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.map-chapter>summary::before{transition:none}}@media print{body{background:#fff;color:#111}.card,.map-chapter,.map-point,.lecture{background:#fff;color:#111;border-color:#bbb}.help,.map-actions{display:none}}
+</style>
+</head>
+<body>
+<main class="page">
+<header>
+<div class="topline"><div><p class="eyebrow">READ WITH LENS</p><h1 class="title">{{TITLE}}</h1><p class="intro">{{INTRO}}</p></div><details class="help"><summary>如何使用</summary><div class="help-panel"><p>沿地图一小段一小段地读；想深入时随时提问。</p><div class="help-grid">
+<section><h3>开始带读</h3><p>从当前记录和带读地图开始。</p><button class="mini-button copy-prompt" data-prompt="prompt-start" type="button">复制带读指令</button><details><summary>查看指令</summary><pre id="prompt-start">{{START_PROMPT}}</pre></details></section>
+<section><h3>同一对话继续</h3><p>说“继续”推进当前模块；切换模块前会先询问。</p><button class="mini-button copy-prompt" data-prompt="prompt-continue" type="button">复制继续指令</button><details><summary>查看指令</summary><pre id="prompt-continue">{{CONTINUE_PROMPT}}</pre></details></section>
+<section><h3>新对话接着读</h3><p>复制指令到能访问本书文件的新对话。</p><button class="mini-button copy-prompt" data-prompt="prompt-resume" type="button">复制新对话指令</button><details><summary>查看指令</summary><pre id="prompt-resume">{{RESUME_PROMPT}}</pre></details></section>
+</div><p class="copy-status" id="copy-status" role="status" aria-live="polite"></p></div></details></div>
+</header>
+<section class="cards" aria-label="阅读概况">
+<a class="card current-card" href="#point-{{CURRENT_POINT}}" data-jump><span class="card-label">当前阅读</span><div class="card-main">{{CURRENT_LABEL}}</div><div class="card-sub">{{CURRENT_CHAPTER}}</div><span class="card-link">在地图中查看 →</span></a>
+<section class="card"><span class="card-label">带读进度</span><div class="progress-values">{{PROGRESS_VALUES}}</div><div class="progress-note">{{MAP_NOTE}}</div></section>
+</section>
+<section id="study-plan" aria-labelledby="map-heading"><div class="map-head"><div><h2 id="map-heading">带读地图</h2><p>按原书章节展开，选择想看的知识点。</p></div><div class="map-actions">
+<details class="tool"><summary class="tool-toggle">搜索</summary><div class="tool-panel"><label for="map-search">搜索章节或知识点</label><input id="map-search" type="search" placeholder="输入关键词" autocomplete="off"></div></details>
+<details class="tool"><summary class="tool-toggle">筛选</summary><div class="tool-panel"><label for="map-status">带读状态</label><select id="map-status"><option value="">全部状态</option><option value="已带读">已完成或含已讲内容</option><option value="进行中">进行中</option><option value="待带读">待带读</option><option value="经确认暂缓">经确认暂缓</option></select></div></details>
+<button type="button" class="collapse-all" id="collapse-map">全部收起</button></div></div><p class="search-status" id="map-search-status" aria-live="polite"></p><div id="map-tree">{{TREE}}</div></section>
+<footer>带读进度记录讲解状态，不代表理解或应用已验证。</footer>
+</main>
+{{LECTURE_TEMPLATES}}
+{{SOURCE_TEMPLATES}}
+<script>
+(()=>{
+ const tree=document.getElementById('map-tree');
+ const points=[...tree.querySelectorAll('.map-point')];
+ const modules=[...tree.querySelectorAll('.map-module')];
+ const chapters=[...tree.querySelectorAll('.map-chapter')];
+ const search=document.getElementById('map-search');
+ const status=document.getElementById('map-status');
+ const result=document.getElementById('map-search-status');
+ let saved=null;
+ function applyFilter(){
+  const query=search.value.trim().toLocaleLowerCase();const state=status.value;const active=Boolean(query||state);
+  const scope=[...chapters,...modules,...points];
+  if(active&&saved===null)saved=scope.map(x=>x.open);
+  let count=0;
+  points.forEach(point=>{const match=(!query||point.dataset.search.includes(query))&&(!state||point.dataset.status===state||(state==='已带读'&&point.dataset.hasHistory==='true'));point.hidden=!match;if(match){count++;if(active){point.closest('.map-module').open=true;point.closest('.map-chapter').open=true}}});
+  modules.forEach(module=>{module.hidden=!module.querySelector('.map-point:not([hidden])')});
+  chapters.forEach(chapter=>{chapter.hidden=!chapter.querySelector('.map-point:not([hidden])')});
+  if(!active&&saved!==null){scope.forEach((x,i)=>{x.open=saved[i]});saved=null}
+  result.textContent=active?`找到 ${count} 节`:'';
+ }
+ search.addEventListener('input',applyFilter);status.addEventListener('change',applyFilter);
+ document.addEventListener('click',event=>{document.querySelectorAll('details.tool[open]').forEach(tool=>{if(!tool.contains(event.target))tool.open=false})});
+ document.addEventListener('keydown',event=>{if(event.key==='Escape')document.querySelectorAll('details.tool[open]').forEach(tool=>{tool.open=false})});
+ document.getElementById('collapse-map').addEventListener('click',()=>{tree.querySelectorAll('details').forEach(x=>{x.open=false});saved=null});
+ function revealHash(){
+  let id;try{id=decodeURIComponent(location.hash.slice(1))}catch(_){return}
+  const target=document.getElementById(id);if(!target)return;
+  if(target.closest('#map-tree')){search.value='';status.value='';applyFilter()}
+  for(let node=target;node;node=node.parentElement)if(node.tagName==='DETAILS')node.open=true;
+  requestAnimationFrame(()=>target.scrollIntoView({block:'start'}));
+ }
+ document.addEventListener('click',event=>{const jump=event.target.closest('a[data-jump]');if(jump&&jump.getAttribute('href')===location.hash)revealHash()});
+ window.addEventListener('hashchange',revealHash);revealHash();
+ document.addEventListener('toggle',event=>{
+  const lesson=event.target;if(!lesson.matches('details.lecture')||!lesson.open)return;
+  const body=lesson.querySelector('.lecture-body');if(body.dataset.loaded)return;
+  const template=document.getElementById(lesson.dataset.lecture);if(template){body.append(template.content.cloneNode(true));body.dataset.loaded='true'}
+ },true);
+ document.addEventListener('click',event=>{
+  const source=event.target.closest('.source-toggle');if(source){let panel=document.getElementById(source.dataset.panel);if(!panel){panel=document.createElement('details');panel.className='source-preview';panel.id=source.dataset.panel;const title=document.createElement('summary');title.textContent=source.textContent;const template=document.getElementById(source.dataset.template);if(!template)return;panel.append(title,template.content.cloneNode(true));const block=source.closest('p,li,.table-scroll,blockquote')||source;if(block.tagName==='LI')block.append(panel);else block.after(panel);source.setAttribute('aria-controls',panel.id);panel.addEventListener('toggle',()=>source.setAttribute('aria-expanded',String(panel.open)))}panel.open=!panel.open;source.setAttribute('aria-expanded',String(panel.open));return}
+  const button=event.target.closest('.copy-prompt');if(!button)return;
+  const value=document.getElementById(button.dataset.prompt).textContent;const message=document.getElementById('copy-status');
+  (async()=>{try{await navigator.clipboard.writeText(value);message.textContent='已复制，可粘贴到对话中。'}catch(_){button.parentElement.querySelector('details').open=true;message.textContent='请复制已展开的指令。'}})();
+ });
+})();
+</script>
+</body></html>

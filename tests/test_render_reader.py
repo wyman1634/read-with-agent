@@ -1,4 +1,6 @@
 import importlib.util
+import hashlib
+import json
 import re
 import tempfile
 import unittest
@@ -166,6 +168,145 @@ class WorkspaceTests(unittest.TestCase):
         self.assertNotIn('XMLHttpRequest', page)
         self.assertIn('下一步：阅读第一章。', page)
 
+    def test_optional_study_map_is_embedded_without_separate_navigation(self):
+        self.write('map.md', '# 测试书')
+        self.write('distillation.md', '## 事务\n已经带读的事务内容。')
+        self.write('study-map-embed.txt', '<!doctype html><html><head></head><body><h1>知识地图</h1><script>window.test = "ok"</script></body></html>')
+        page = reader.render_workspace(self.workspace).read_text(encoding='utf-8')
+        self.assertIn('href="#study-plan"', page)
+        self.assertIn('id="study-plan"', page)
+        self.assertIn('title="全书带读地图"', page)
+        self.assertIn('sandbox="allow-scripts allow-top-navigation-by-user-activation"', page)
+        self.assertIn('&lt;h1&gt;知识地图&lt;/h1&gt;', page)
+        self.assertIn('&lt;base target=&quot;_top&quot;&gt;', page)
+        self.assertNotIn('src="study-map.html"', page)
+        self.assertIn('已经带读的事务内容。', page)
+        self.assertEqual(page.count('<script>'), 1)
+        self.assertIn('reader-study-map-height', page)
+        self.assertIn('event.source !== studyMapFrame.contentWindow', page)
+        self.assertIn('ResizeObserver', page)
+
+    def test_compact_navigation_keeps_current_and_all_reading_content(self):
+        self.write('map.md', '# 测试书')
+        self.write('distillation.md', '## 当前单元：备份\n现在的内容\n## 已介绍：索引\n索引内容\n## 已介绍：锁\n锁内容')
+        self.write('study-map-embed.txt', '<html><head></head><body>地图</body></html>')
+        self.write('reader-navigation.txt', 'compact\n')
+        page = reader.render_workspace(self.workspace).read_text(encoding='utf-8')
+        nav = re.search(r'<nav class="toc">(.*?)</nav>', page, re.S).group(1)
+        self.assertEqual(len(re.findall(r'<a\s', nav)), 4)
+        for label in ('带读地图', '当前阅读', '已讲内容', '阅读进度'):
+            self.assertIn(label, nav)
+        self.assertIn('href="#chapter-当前单元-备份"', nav)
+        self.assertNotIn('class="chapter-link"', nav)
+        self.assertIn('id="chapter-已介绍-索引"', page)
+        self.assertIn('索引内容', page)
+        self.assertIn('锁内容', page)
+
+    def test_optional_theme_is_local_and_cannot_close_style(self):
+        self.write('map.md', '# 测试书')
+        self.write('reader-theme.css', ':root { --paper: #10151b; }')
+        page = reader.render_workspace(self.workspace).read_text(encoding='utf-8')
+        self.assertIn(':root { --paper: #10151b; }', page)
+        self.write('reader-theme.css', '</style><script>bad()</script>')
+        with self.assertRaises(ValueError):
+            reader.render_workspace(self.workspace)
+        self.write('reader-theme.css', '@import "https://example.com/x.css";')
+        with self.assertRaises(ValueError):
+            reader.render_workspace(self.workspace)
+
+    def test_map_first_keeps_history_under_its_point_and_counts_once(self):
+        self.write('reader-navigation.txt', 'map-first')
+        self.write('original.txt', '真实原文片段')
+        self.write('distillation.md', '## 已介绍：事务提交\n真实讲解。\n\n[展开原文](original.txt)')
+        point = {'id':'1.1.1','title':'事务','status':'进行中','counted':True,
+                 'goal':'事务的作用','items':[],'related':[],'history_ids':['h1']}
+        summary = {'id':'1.2','title':'小结','status':'待带读','counted':False,
+                   'goal':'回顾','items':[],'related':[],'history_ids':[]}
+        data = {'title':'测试书','description':'一本测试书。',
+                'current':{'point_id':'1.1.1','label':'事务提交','chapter':'第1章'},
+                'topics':[{'chapters':[{'id':1,'title':'基础','modules':[{'id':'1.1','title':'事务','points':[point,summary]}]}]}],
+                'history':[{'id':'h1','title':'事务提交','reader_link':'reader.html#old-transaction'}],
+                'counts':{'by_status':{'已带读':0,'进行中':1,'待带读':0}}}
+        self.write('study-map-data.json', json.dumps(data, ensure_ascii=False))
+        page = reader.render_workspace(self.workspace).read_text(encoding='utf-8')
+        self.assertNotIn('<iframe', page)
+        self.assertNotIn('class="sidebar"', page)
+        self.assertIn('href="#point-1.1.1"', page)
+        self.assertIn('已讲过 1 段', page)
+        self.assertIn('1 个章节条目按节统计', page)
+        self.assertIn('已讲解（段）', page)
+        self.assertIn('data-has-history="true"', page)
+        self.assertIn('id="old-transaction"', page)
+        self.assertIn('真实讲解。', page)
+        self.assertIn('真实原文片段', page)
+        self.assertIn('id="prompt-resume"', page)
+        point['status'] = '经确认暂缓'
+        data['counts']['by_status'] = {'已带读':0,'进行中':0,'待带读':0,'经确认暂缓':1}
+        self.write('study-map-data.json', json.dumps(data, ensure_ascii=False))
+        page = reader.render_workspace(self.workspace).read_text(encoding='utf-8')
+        self.assertIn('class="status deferred">经确认暂缓', page)
+        self.assertIn('<strong>1</strong><span>暂缓（节）</span>', page)
+        self.assertIn('<option value="经确认暂缓">', page)
+        data['progress_mode'] = 'history-led'
+        self.write('study-map-data.json', json.dumps(data, ensure_ascii=False))
+        page = reader.render_workspace(self.workspace).read_text(encoding='utf-8')
+        self.assertIn('<strong>1</strong><span>暂缓（节）</span>', page)
+
+    def test_map_first_rejects_unassigned_history(self):
+        self.write('reader-navigation.txt', 'map-first')
+        self.write('distillation.md', '## 已介绍：事务提交\n内容')
+        data = {'topics':[], 'history':[{'id':'h1','title':'事务提交'}],
+                'current':{'point_id':'1.1.1'}}
+        self.write('study-map-data.json', json.dumps(data, ensure_ascii=False))
+        with self.assertRaisesRegex(ValueError, '历史讲解'):
+            reader.render_workspace(self.workspace)
+
+    def test_map_first_renders_derived_history_and_original_source(self):
+        self.write('reader-navigation.txt', 'map-first')
+        self.write('distillation.md', '原有笔记仍保留。')
+        self.write('map-history.md', '## 已介绍：01 字典用 ** 展开\n原有讲解。')
+        (self.workspace / 'source').mkdir()
+        self.write('source/chapter.txt', '可回查的原书内容')
+        point = {'id':'1.1','title':'字典','status':'进行中','counted':True,
+                 'source':'source/chapter.txt','history_ids':['h1']}
+        data = {'history_file':'map-history.md', 'history_label':'历史记录（段）',
+                'point_source_previews':True,
+                'current':{'point_id':'1.1','label':'字典','chapter':'第1章'},
+                'topics':[{'chapters':[{'id':1,'title':'基础','modules':[{'id':'1.1','title':'字典','points':[point]}]}]}],
+                'history':[{'id':'h1','title':'01 字典用 ** 展开','display_status':'历史记录'}],
+                'counts':{'by_status':{'已带读':0,'进行中':1,'待带读':0}}}
+        self.write('study-map-data.json', json.dumps(data, ensure_ascii=False))
+        page = reader.render_workspace(self.workspace).read_text(encoding='utf-8')
+        self.assertIn('原有讲解。', page)
+        self.assertIn('可回查的原书内容', page)
+        self.assertIn('历史记录（段）', page)
+        self.assertIn('data-has-history="false"', page)
+        data['progress_mode'] = 'history-led'
+        data['history'][0]['display_status'] = '已带读'
+        self.write('study-map-data.json', json.dumps(data, ensure_ascii=False))
+        page = reader.render_workspace(self.workspace).read_text(encoding='utf-8')
+        self.assertIn('<strong>1</strong><span>已带读（段）</span>', page)
+        self.assertIn('data-has-history="true"', page)
+        self.assertIn('<span class="status done">已带读</span>', page)
+        data['history_source_sha256'] = hashlib.sha256((self.workspace / 'distillation.md').read_bytes()).hexdigest()
+        self.write('study-map-data.json', json.dumps(data, ensure_ascii=False))
+        reader.render_workspace(self.workspace)
+        self.write('distillation.md', '原有笔记已更新。')
+        with self.assertRaisesRegex(ValueError, '原始带读记录已变化'):
+            reader.render_workspace(self.workspace)
+        data.pop('history_source_sha256')
+        data['history_snapshot_sha256'] = hashlib.sha256((self.workspace / 'map-history.md').read_bytes()).hexdigest()
+        self.write('study-map-data.json', json.dumps(data, ensure_ascii=False))
+        reader.render_workspace(self.workspace)
+        self.write('map-history.md', '## 已介绍：01 字典用 ** 展开\n历史副本变了。')
+        with self.assertRaisesRegex(ValueError, '地图历史副本已变化'):
+            reader.render_workspace(self.workspace)
+        data.pop('history_snapshot_sha256')
+        data['history_file'] = '../outside.md'
+        self.write('study-map-data.json', json.dumps(data, ensure_ascii=False))
+        with self.assertRaisesRegex(ValueError, '历史记录文件'):
+            reader.render_workspace(self.workspace)
+
     def test_local_original_is_embedded_without_navigation_or_fetch(self):
         self.write('original.txt', '[chapter.html:block-4]\n原文中的 <script>命令</script> 只是文字。')
         self.write('route.md', '[2.1 原文](original.txt)')
@@ -273,6 +414,54 @@ class WorkspaceTests(unittest.TestCase):
         self.assertIn('实际反馈：懂了；仅为自述理解。', page)
         self.assertNotIn('未选择的早期记录', page)
         self.assertEqual(before, {p: p.read_bytes() for p in self.workspace.rglob('*.md')})
+
+    def test_shared_preferences_apply_without_a_book_preferences_file(self):
+        self.write('preferences.md', '# 公共偏好\n复杂关系先图后文。<script>unsafe</script>')
+        book = self.workspace / 'book'
+        book.mkdir()
+        (book / 'progress.md').write_text('当前未答；下次接回。', encoding='utf-8')
+        before = {p: p.read_bytes() for p in self.workspace.rglob('*.md')}
+        page = reader.render_workspace(book).read_text(encoding='utf-8')
+        self.assertIn('<summary>公共阅读偏好</summary>', page)
+        self.assertIn('复杂关系先图后文。&lt;script&gt;', page)
+        self.assertNotIn('<summary>当前阅读偏好</summary>', page)
+        self.assertIn('当前未答；下次接回。', page)
+        self.assertEqual(before, {p: p.read_bytes() for p in self.workspace.rglob('*.md')})
+
+    def test_nearest_shared_preferences_and_book_exceptions_are_kept_separate(self):
+        self.write('preferences.md', '# 外层偏好\n不应加载的外层记录。')
+        collection = self.workspace / 'reading'
+        book = collection / 'python'
+        book.mkdir(parents=True)
+        (collection / 'preferences.md').write_text('# 偏好\n中文，默认图解。', encoding='utf-8')
+        (book / 'preferences.md').write_text(
+            '# 偏好\n[公共偏好](../preferences.md)\n本书只用文字，答错先巩固。', encoding='utf-8')
+        (book / 'progress.md').write_text('第一章；未验证。', encoding='utf-8')
+        before = {p: p.read_bytes() for p in self.workspace.rglob('*.md')}
+        page = reader.render_workspace(book).read_text(encoding='utf-8')
+        self.assertIn('中文，默认图解。', page)
+        self.assertIn('本书只用文字，答错先巩固。', page)
+        self.assertNotIn('不应加载的外层记录。', page)
+        self.assertIn('href="#shared-preferences"', page)
+        self.assertNotIn('（原文不可用）', page)
+        inspector = Inspector()
+        inspector.feed(page)
+        self.assertEqual(len(inspector.ids), len(set(inspector.ids)))
+        for href in inspector.hrefs:
+            if href.startswith('#'):
+                self.assertIn(href[1:], inspector.ids)
+        self.assertEqual(before, {p: p.read_bytes() for p in self.workspace.rglob('*.md')})
+
+    def test_shared_preferences_are_found_for_a_nested_legacy_book(self):
+        self.write('preferences.md', '# 公共偏好\n沿用简图。')
+        book = self.workspace / 'outputs' / 'reading' / 'book'
+        book.mkdir(parents=True)
+        (book / 'map.md').write_text('# 旧书', encoding='utf-8')
+        (book / 'preferences.md').write_text('[公共偏好](../../../preferences.md)', encoding='utf-8')
+        page = reader.render_workspace(book).read_text(encoding='utf-8')
+        self.assertIn('沿用简图。', page)
+        self.assertIn('href="#shared-preferences"', page)
+        self.assertIn(str(book.resolve()), page)
 
 
 if __name__ == '__main__':

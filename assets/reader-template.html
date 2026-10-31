@@ -87,6 +87,7 @@
     @media(max-width:800px) { .layout { display:block; } .sidebar { position:relative; height:auto; padding:1.2rem 1.5rem; border-right:0; border-bottom:1px solid var(--line); } .brand { margin-bottom:.6rem; } .sidebar h2,.sidebar-note,.chapter-link { display:none!important; } .toc { display:flex; gap:1.2rem; flex-wrap:wrap; } main { padding:2rem 1.5rem 3rem; } .book-section { margin-top:2.3rem; } }
     @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
     @media print { body { background:white; color:black; font-size:11pt; } .layout { display:block; } .sidebar,.tools,#search-status,.skip,.hint { display:none; } main { padding:0; } .search-unit[hidden] { display:block!important; } details::details-content { display:block!important; content-visibility:visible!important; } details > .chapter-body { display:block!important; } .chapter { break-inside:auto; background:none; } summary,h2,h3 { break-after:avoid; } .book-section { margin-top:1.5rem; } pre { white-space:pre-wrap; } pre code { white-space:pre-wrap; overflow-wrap:anywhere; } .table-scroll { overflow:visible; } a { color:inherit; } }
+    {{READER_THEME}}
   </style>
 </head>
 <body>
@@ -96,11 +97,7 @@
       <p class="brand">READ WITH AGENT</p>
       <h2>阅读目录</h2>
       <nav class="toc">
-        <a href="#overview">全书地图与材料范围</a>
-        <a href="#depth">分层蒸馏</a>
-        {{CHAPTER_NAV}}
-        <a href="#route">阅读路线</a>
-        <a href="#progress">当前进度</a>
+        {{NAV_LINKS}}
       </nav>
       <p class="sidebar-note">先掌握全貌，再进入值得细读的内容。</p>
     </aside>
@@ -116,6 +113,7 @@
         </div>
         <p id="search-status" role="status" aria-live="polite"></p>
       </header>
+      {{STUDY_MAP}}
       <section class="session-guide" id="session-guide" aria-labelledby="session-heading">
         <h2 id="session-heading">怎么带读，怎么接着读</h2>
         <div class="session-cards">
@@ -163,6 +161,20 @@
   {{SOURCE_TEMPLATES}}
   <script>
     (() => {
+      const studyMapFrame = document.getElementById('study-map-frame');
+      if (studyMapFrame) {
+        window.addEventListener('message', event => {
+          if (event.source !== studyMapFrame.contentWindow || !event.data ||
+              event.data.type !== 'reader-study-map-height') return;
+          const height = Number(event.data.height);
+          if (Number.isFinite(height) && height >= 100 && height <= 200000)
+            studyMapFrame.style.height = `${Math.ceil(height)}px`;
+        });
+        const measureMap = () => studyMapFrame.contentWindow.postMessage(
+          {type:'reader-study-map-measure'}, '*');
+        studyMapFrame.addEventListener('load', measureMap);
+        measureMap();
+      }
       const input = document.getElementById('search');
       const units = [...document.querySelectorAll('.search-unit')];
       const chapters = [...document.querySelectorAll('details.chapter')];

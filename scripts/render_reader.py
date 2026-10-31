@@ -8,6 +8,7 @@ The caller must omit spoilers until the reader has explicitly allowed them.
 import argparse
 import base64
 import html
+import importlib.util
 import re
 import sys
 from pathlib import Path
@@ -332,6 +333,13 @@ class SourcePreviews:
 
 def render_workspace(workspace, output=None):
     workspace = Path(workspace)
+    nav_setting = workspace / "reader-navigation.txt"
+    if nav_setting.is_file() and nav_setting.read_text(encoding="utf-8").strip() == "map-first":
+        renderer_path = Path(__file__).resolve().parent / "render_map_reader.py"
+        spec = importlib.util.spec_from_file_location("read_with_agent_map_renderer", renderer_path)
+        renderer = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(renderer)
+        return renderer.render(workspace, output, globals())
     sources = {}
     for filename in FILES:
         path = workspace / filename
@@ -342,9 +350,18 @@ def render_workspace(workspace, output=None):
     preferences = workspace / "preferences.md"
     if preferences.is_file():
         sources["preferences.md"] = preferences.read_text(encoding="utf-8-sig")
+    shared_reference = None
+    for ancestor in workspace.resolve().parents:
+        shared_preferences = ancestor / "preferences.md"
+        if shared_preferences.is_file():
+            sources["shared-preferences.md"] = shared_preferences.read_text(encoding="utf-8-sig")
+            shared_reference = "/".join(
+                [".."] * len(workspace.resolve().relative_to(ancestor).parts) + ["preferences.md"])
+            break
     anchors = Anchors()
     anchors.used.update(("overview", "depth", "route", "progress", "session-guide", "session-heading",
-                         "prompt-start", "prompt-continue", "prompt-resume", "copy-status"))
+                         "prompt-start", "prompt-continue", "prompt-resume", "copy-status",
+                         "shared-preferences", "study-plan", "study-plan-heading"))
     title = "我的读书页"
     for line in sources.get("map.md", "").splitlines():
         heading = HEADING.match(line)
@@ -355,13 +372,19 @@ def render_workspace(workspace, output=None):
     def body(filename, prefix):
         if filename not in sources or not sources[filename].strip():
             return '<p class="empty">尚未准备。后续阅读时补充。</p>'
-        return markdown(sources[filename], anchors, prefix)
+        rendered = markdown(sources[filename], anchors, prefix)
+        if shared_reference and sources.get("shared-preferences.md", "").strip():
+            rendered = rendered.replace('href="' + shared_reference + '"', 'href="#shared-preferences"')
+        return rendered
 
     nav = []
     depth = []
+    current_id = None
     for name, content in chapters(sources.get("distillation.md", "")):
         identifier = anchors.make(name, "chapter-")
         escaped_id = html.escape(identifier, quote=True)
+        if current_id is None and plain(name).startswith("当前单元"):
+            current_id = escaped_id
         depth.append(f'<details class="chapter search-unit" id="{escaped_id}"><summary>{inline(name, links=False)}</summary>'
                      + '<div class="chapter-body">' + markdown(content, anchors, identifier + "-") + "</div></details>")
         nav.append(f'<a class="chapter-link" href="#{escaped_id}">{html.escape(plain(name))}</a>')
@@ -372,19 +395,76 @@ def render_workspace(workspace, output=None):
         "MAP": body("map.md", "map-"),
         "DEPTH": "\n".join(depth),
         "CHAPTER_NAV": "\n".join(nav),
+        "STUDY_MAP_NAV": "",
+        "STUDY_MAP": "",
+        "READER_THEME": "",
+        "NAV_LINKS": "",
         "ROUTE": body("route.md", "route-"),
-        "PROGRESS": body("progress.md", "progress-") + (
-            '<details class="reading-preferences"><summary>当前阅读偏好</summary>'
-            + body("preferences.md", "preferences-") + '</details>'
-            if sources.get("preferences.md", "").strip() else ""),
+        "PROGRESS": body("progress.md", "progress-") + "".join(
+            '<details class="reading-preferences"' + (
+                ' id="shared-preferences"' if filename == "shared-preferences.md" else "")
+            + '><summary>' + label + '</summary>'
+            + body(filename, prefix) + '</details>'
+            for filename, prefix, label in (
+                ("shared-preferences.md", "shared-preferences-", "公共阅读偏好"),
+                ("preferences.md", "preferences-", "当前阅读偏好"),
+            ) if sources.get(filename, "").strip()),
         "START_PROMPT": html.escape(f"$read-with-agent 请开始带读这个工作区：{workspace.resolve()}\n"
                                   "从记录的当前单元开始，一次一小段：先解释重点并展示关键原文，再等我讨论或实践。"),
         "CONTINUE_PROMPT": html.escape(f"$read-with-agent 继续带读这个工作区：{workspace.resolve()}\n"
                                      "读取已有进度，接上当前讨论或下一步。"),
         "RESUME_PROMPT": html.escape(f"$read-with-agent 继续带读这个工作区：{workspace.resolve()}\n"
-                                   "先读取 progress.md 与存在的 preferences.md，再按指针读取当前路线、蒸馏和原文；身份或范围缺失时补读 map.md。"
+                                   "先读取最近祖先目录的公共 preferences.md、本书 preferences.md（如有）与 progress.md，再按指针读取当前路线、蒸馏和原文；身份或范围缺失时补读 map.md。"
                                    "采用最新记录，保留未答问题与真实理解状态，一次继续一小段。"),
     }
+    study_map = workspace / "study-map-embed.txt"
+    if study_map.is_file():
+        embedded = study_map.read_text(encoding="utf-8")
+        # Isolate map styles/scripts and preserve top-level navigation to reading notes.
+        embedded = embedded.replace("<head>", '<head><base target="_top">', 1)
+        embedded = embedded.replace(
+            "</head>",
+            '<style>body>header{display:none}main{max-width:none;margin:0;padding:0}'
+            'body{background:transparent}</style></head>', 1)
+        resize_script = '''<script>(()=>{
+          let scheduled = false;
+          const send = () => { if (scheduled) return; scheduled = true;
+            requestAnimationFrame(() => { scheduled = false;
+              parent.postMessage({type:'reader-study-map-height',
+                height:Math.ceil(document.body.getBoundingClientRect().height)}, '*'); }); };
+          if (typeof ResizeObserver !== 'undefined') new ResizeObserver(send).observe(document.body);
+          addEventListener('load', send); addEventListener('click', send);
+          addEventListener('input', send); addEventListener('change', send);
+          addEventListener('message', e => { if (e.source === parent && e.data &&
+            e.data.type === 'reader-study-map-measure') send(); });
+          send();
+        })();</script>'''
+        embedded = embedded.replace("</body>", resize_script + "</body>", 1)
+        values["STUDY_MAP_NAV"] = '<a href="#study-plan">带读地图与进度</a>'
+        values["STUDY_MAP"] = (
+            '<section class="book-section" id="study-plan" aria-labelledby="study-plan-heading">'
+            '<h2 class="section-heading" id="study-plan-heading">带读地图与进度</h2>'
+            '<iframe id="study-map-frame" title="全书带读地图" sandbox="allow-scripts allow-top-navigation-by-user-activation" '
+            'style="display:block;width:100%;height:800px;border:0;overflow:hidden" '
+            f'srcdoc="{html.escape(embedded, quote=True)}"></iframe></section>'
+        )
+    default_nav = (values["STUDY_MAP_NAV"] + '<a href="#overview">全书地图与材料范围</a>'
+                   '<a href="#depth">分层蒸馏</a>' + "\n".join(nav)
+                   + '<a href="#route">阅读路线</a><a href="#progress">当前进度</a>')
+    nav_setting = workspace / "reader-navigation.txt"
+    compact_nav = nav_setting.is_file() and nav_setting.read_text(encoding="utf-8").strip() == "compact"
+    if compact_nav and study_map.is_file():
+        values["NAV_LINKS"] = ('<a href="#study-plan">带读地图</a>'
+                               f'<a href="#{current_id or "depth"}">当前阅读</a>'
+                               '<a href="#depth">已讲内容</a><a href="#progress">阅读进度</a>')
+    else:
+        values["NAV_LINKS"] = default_nav
+    theme_path = workspace / "reader-theme.css"
+    if theme_path.is_file():
+        theme = theme_path.read_text(encoding="utf-8")
+        if re.search(r'</\s*style|@import|url\s*\(', theme, re.IGNORECASE):
+            raise ValueError("阅读主题不能包含外部资源或关闭 style 标签。")
+        values["READER_THEME"] = theme
     previews = SourcePreviews(workspace, anchors)
     for key in ("MAP", "DEPTH", "ROUTE", "PROGRESS"):
         values[key] = previews.replace(values[key])

@@ -65,7 +65,7 @@ python3 scripts/extract_epub.py <book.epub> <reading-workspace>/source
 
 ## Workspace and reading page
 
-Reading data lives in a separate workspace. The installed skill directory contains reusable resources:
+Reading data lives in a separate workspace. Reuse an existing reading root and put new books alongside existing ones; fall back to `outputs/reading/` only when no convention exists. The root's `preferences.md` holds shared choices, while each book keeps its differences. The installed skill directory contains reusable resources:
 
 ```text
 <reading-workspace>/
@@ -74,7 +74,7 @@ Reading data lives in a separate workspace. The installed skill directory contai
   distillation.md  Distilled ideas grounded in checked material
   route.md         Key passages and reading route
   progress.md      Current state, evidence, and next step
-  preferences.md  Optional reader-specific preferences
+  preferences.md   Optional book choices and exceptions to shared preferences
   history/         Discussion records consulted as needed
   visuals/         Optional diagrams and independent demos
   reader.html      Regenerable reading interface
@@ -84,11 +84,13 @@ Reading data lives in a separate workspace. The installed skill directory contai
 python3 scripts/render_reader.py <reading-workspace>
 ```
 
-The renderer reads the map, distilled notes, route, progress, and preferences if present. To resume, the agent first reads the short progress summary and preferences, then follows pointers to the relevant passages. History is consulted as needed. Page clicks do not update understanding status; Markdown records and actual discussion support continuity.
+The default reader displays the map, distilled notes, route, progress, shared preferences from the nearest ancestor directory, and book preferences if present. The two preference layers appear separately. To resume, read both layers and the short progress summary before following pointers to relevant passages. Classify new choices as shared or book-specific using [workspace.md](references/workspace.md); store shared choices once. Explicit book exceptions and current requests take precedence. History is consulted as needed. Page clicks do not update understanding status; Markdown records and actual discussion support continuity.
+
+For technical books, build a chapter-ordered map of topics, modules, and knowledge points, then check with the reader before moving between modules. A prepared structured map can use the optional [map-first reader](references/map-reader.md), with expandable chapters, status filters, a current location, and linked reading history. See the fictional [map-first example](examples/map-first/). The renderer does not automatically distill a book or verify history; maintain the map and progress against the source and actual conversations.
 
 ## Visuals and offline delivery
 
-Technical reading defaults to text and simple architecture diagrams. When an example already explains a single field, continue reading. Add a small amount of interaction only when manipulating state helps explain a change. Selection, cost, and delivery rules are in [references/visuals.md](references/visuals.md).
+Use diagrams when they help: continue with a short explanation, complete example, or small table when that is sufficient. Reuse existing diagrams for familiar relationships; add a diagram when unfamiliar structures, timing, or shared state remain confusing. Explain parameter-only changes with text or code. Add interaction only when manipulating state helps understanding. Selection, cost, and delivery rules are in [references/visuals.md](references/visuals.md).
 
 The current reading page directly displays monospace text diagrams in code blocks. Explicit links to TXT, Markdown, JSON, PNG / JPG / JPEG / WebP files inside the workspace become expandable, embedded content available offline. Each embedded file is limited to 2 MB. Link an agent-created diagram with a regular Markdown link, such as `[Agent diagram: topic](visuals/topic/diagram.png)`, to distinguish it from a figure in the original text.
 

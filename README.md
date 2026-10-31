@@ -64,7 +64,7 @@ python3 scripts/extract_epub.py <原书.epub> <本书工作区>/source
 
 ## 工作区与页面
 
-阅读数据保存在独立工作区，技能目录只存可复用资源：
+阅读数据保存在独立工作区，技能目录只存可复用资源。已有阅读根目录时新书直接与其他书同级，只有无约定时才回退到 `outputs/reading/`；阅读根目录的 `preferences.md` 保存公共偏好，各书仅保存差异：
 
 ```text
 <本书工作区>/
@@ -73,7 +73,7 @@ python3 scripts/extract_epub.py <原书.epub> <本书工作区>/source
   distillation.md  已核对内容的蒸馏
   route.md         关键原文与阅读路线
   progress.md      当前状态、证据和下一步
-  preferences.md  可选，当前读者的差异化偏好
+  preferences.md   可选，本书选择与公共偏好的例外
   history/         按需回查的讨论记录
   visuals/         可选，独立图形与演示
   reader.html      可重新生成的界面
@@ -83,11 +83,13 @@ python3 scripts/extract_epub.py <原书.epub> <本书工作区>/source
 python3 scripts/render_reader.py <本书工作区>
 ```
 
-渲染器读取地图、蒸馏、路线、进度及存在的偏好文件。续读先读简短进度和偏好，再按指针加载当前原文；历史按需回查。网页点击不会写回理解状态，Markdown 与真实讨论是续读依据。
+默认阅读页读取地图、蒸馏、路线、进度，以及最近祖先目录的公共偏好和本书偏好，分开展示两层。续读先读两层偏好与简短进度，再按指针加载当前原文；新增偏好按 [workspace.md](references/workspace.md) 判断公共或本书范围，公共项只维护一份。本书明确例外和当前要求优先。历史按需回查，网页点击不会写回理解状态，Markdown 与真实讨论是续读依据。
+
+技术书可先建立按原书顺序排列的主题、模块和知识点清单，再逐段带读；切换模块前说明进度并与读者确认。已有结构化地图时，可使用[地图式阅读页](references/map-reader.md)：章节逐层展开，支持状态筛选、当前入口和关联历史。可运行的虚构数据见 [examples/map-first](examples/map-first/)。渲染器不会自动蒸馏全书或核实历史，地图和状态仍须对照原文与实际对话维护。
 
 ## 图形与离线交付
 
-技术带读默认文字＋简洁架构图；单个字段用例子就能讲清时直接推进，状态变化确需操作时才加少量交互。具体选择、成本与交付规则见 [references/visuals.md](references/visuals.md)。
+技术带读按需画图：短解释、完整示例或小表格足够时直接推进；陌生结构、时序或共享关系仍易混淆时优先复用已有图，再按需补图。同一关系只换参数时用文字或代码说明，状态变化确需操作时才加少量交互。具体选择、成本与交付规则见 [references/visuals.md](references/visuals.md)。
 
 当前读书页直接显示代码块中的等宽文本简图。工作区内明确链接的 TXT、Markdown、JSON、PNG／JPG／JPEG／WebP 会成为点击展开的内容，内嵌后可离线查看，每个文件上限 2 MB。Agent 示意图使用 `[Agent 示意图：主题](visuals/topic/diagram.png)` 这样的普通链接，区分原书图与补充图。
 
